@@ -1,16 +1,17 @@
 from fastapi import Depends, HTTPException, APIRouter
+from fastapi.responses import JSONResponse
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from api.users.models import User
-from api.users.serializer import UserSerializer
+from api.users.serializer import UserSerializer, ChangePasswordSerializer
 from settings.connector import get_session
 
 
 router = APIRouter()
 
 
-@router.post('/')
+@router.post('/', response_model=User)
 async def create_user(data: UserSerializer, *, session: AsyncSession = Depends(get_session)):
     instance = User.from_orm(data)
     session.add(instance)
@@ -20,7 +21,7 @@ async def create_user(data: UserSerializer, *, session: AsyncSession = Depends(g
 
 
 @router.get('/{user_id}', response_model=User)
-async def get_user(user_id: None, *, session: AsyncSession = Depends(get_session)):
+async def get_user(user_id: str, *, session: AsyncSession = Depends(get_session)):
     instance = await session.get(User, user_id)
     if not instance:
         raise HTTPException(status_code=404, detail=f"This User is not exist.")
@@ -28,7 +29,7 @@ async def get_user(user_id: None, *, session: AsyncSession = Depends(get_session
 
 
 @router.patch('/{user_id}', response_model=User)
-async def update_user(data: User, user_id: None, *, session: AsyncSession = Depends(get_session)):
+async def update_user(data: ChangePasswordSerializer, user_id: str, *, session: AsyncSession = Depends(get_session)):
     instance = await session.get(User, user_id)
 
     if not instance:
@@ -46,7 +47,7 @@ async def update_user(data: User, user_id: None, *, session: AsyncSession = Depe
 
 
 @router.delete('/{user_id}', response_model=User)
-async def delete_user(user_id: None, *, session: AsyncSession = Depends(get_session)):
+async def delete_user(user_id: str, *, session: AsyncSession = Depends(get_session)):
     instance = await session.get(User, user_id)
 
     if not instance:
@@ -54,4 +55,4 @@ async def delete_user(user_id: None, *, session: AsyncSession = Depends(get_sess
 
     await session.delete(instance)
     await session.commit()
-    return {"msg": "Complete Delete."}
+    return JSONResponse({'msg': 'success.'}, status_code=201)
